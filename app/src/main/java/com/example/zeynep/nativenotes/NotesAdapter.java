@@ -1,6 +1,7 @@
 package com.example.zeynep.nativenotes;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -32,6 +33,7 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesHolder>
         holder.note_img.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 noteInterface.showUpdateNotePopup(position);
             }
         });

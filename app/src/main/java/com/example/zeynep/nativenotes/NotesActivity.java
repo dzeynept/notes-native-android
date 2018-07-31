@@ -1,7 +1,9 @@
 package com.example.zeynep.nativenotes;
 
 import android.app.Dialog;
+import android.app.SearchManager;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -10,28 +12,37 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.Window;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.SearchView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class NotesActivity extends AppCompatActivity implements View.OnClickListener, NoteInterface {
+public class NotesActivity extends AppCompatActivity implements View.OnClickListener, NoteInterface , SearchView.OnQueryTextListener{
     RecyclerView recyclerView;
     ImageView addNote;
     List<String> note_list = new ArrayList<>();
     List<String> note_list_db = new ArrayList<>();
+    List<String> note_id_list_db = new ArrayList<>();
     NotesAdapter notesAdapter;
     private Dialog dialog;
+    Button profile_btn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_notes);
         recyclerView = findViewById(R.id.notes_recycler);
+        profile_btn = findViewById(R.id.profile_btn);
+        profile_btn.setOnClickListener(this);
         addNote = findViewById(R.id.fab);
         addNote.setOnClickListener(this);
         readFromDB();
@@ -42,8 +53,10 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
         switch (view.getId())
         {
             case R.id.fab :
-                //todo: dialog
                 showAddNotePopup();
+                break;
+            case R.id.profile_btn :
+                startActivity(new Intent(NotesActivity.this, ProfileActivity.class));
                 break;
         }
     }
@@ -55,46 +68,58 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
             ContentValues cv = new ContentValues();
             cv.put(DataBaseHelper.NOTES_COLUMN_NOTES, note);
             db.insert(DataBaseHelper.NOTES_TABLE_NAME, null, cv);
-            startActivity(new Intent(NotesActivity.this, NotesActivity.class));
-            finish();
+
+
+          //  count = db.update(DataBaseHelper.USER_NOTE_ID, cvuser, DataBaseHelper.NOTES_COLUMN_ID+" = ?",new String[]{id});
+
+            readFromDB();
+            showNotes(note_list_db);
         } catch (Exception e) {
             Toast.makeText(this, "" + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
         db.close();
     }
-
-    public void deleteFromDB(int id) {
+    private void showNotes(List<String> notes_list) {
+        if (notes_list.size() > 0) {
+            RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
+            recyclerView.setLayoutManager(mLayoutManager);
+            recyclerView.setAdapter(notesAdapter);
+        }
+    }
+    public void deleteFromDB(String id) {
         DataBaseHelper dataBaseHelper = new DataBaseHelper(getApplicationContext());
         SQLiteDatabase db = dataBaseHelper.getWritableDatabase();
 
-
         try {
 
-            db.execSQL("DELETE FROM "+DataBaseHelper.NOTES_TABLE_NAME+" WHERE _id="+id);
-           // db.delete(DataBaseHelper.NOTES_TABLE_NAME, DataBaseHelper.NOTES_COLUMN_ID + "=?" , new String[]{String.valueOf(id)}                              );
-            startActivity(new Intent(NotesActivity.this, NotesActivity.class));
-            finish();
+          //  db.execSQL("DELETE FROM "+DataBaseHelper.NOTES_TABLE_NAME+" WHERE _id="+id);
+            db.delete(DataBaseHelper.NOTES_TABLE_NAME, DataBaseHelper.NOTES_COLUMN_ID + "=?" , new String[]{id}                              );
         } catch (Exception e) {
             Toast.makeText(this, "" + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
-        db.close();
+            db.close();
+        readFromDB();
+        showNotes(note_list_db);
     }
-    public int updateNoteDB(String note, int id) {
+    public int updateNoteDB(String id, String note) {
         DataBaseHelper dataBaseHelper = new DataBaseHelper(getApplicationContext());
         SQLiteDatabase db = dataBaseHelper.getWritableDatabase();
         int count = 0;
         try {
             ContentValues cv = new ContentValues();
-            cv.put(DataBaseHelper.NOTES_COLUMN_NOTES, note);
-            count = db.update(DataBaseHelper.NOTES_TABLE_NAME, cv, DataBaseHelper.NOTES_COLUMN_ID+" = ?",new String[]{String.valueOf(id)});
+           cv.put(DataBaseHelper.NOTES_COLUMN_NOTES, note);
+            count = db.update(DataBaseHelper.NOTES_TABLE_NAME, cv, DataBaseHelper.NOTES_COLUMN_ID+" = ?",new String[]{id});
 
-            startActivity(new Intent(NotesActivity.this, NotesActivity.class));
-            finish();
+
         } catch (Exception e) {
             Toast.makeText(this, "" + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
         db.close();
+        readFromDB();
+        showNotes(note_list_db);
         return  count;
+
+
     }
 
 
@@ -102,11 +127,14 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
         DataBaseHelper dataBaseHelper = new DataBaseHelper(NotesActivity.this);
         SQLiteDatabase db = dataBaseHelper.getReadableDatabase();
         try {
-            String[] stunlar = {DataBaseHelper.NOTES_COLUMN_ID, DataBaseHelper.NOTES_COLUMN_NOTES};
-            Cursor cursor = db.query(DataBaseHelper.NOTES_TABLE_NAME, stunlar, null, null, null, null, null);
+            String[] note_cloumn = {DataBaseHelper.NOTES_COLUMN_ID, DataBaseHelper.NOTES_COLUMN_NOTES};
+            Cursor cursor = db.query(DataBaseHelper.NOTES_TABLE_NAME, note_cloumn, null, null, null, null, null);
             while (cursor.moveToNext()) {
+                note_id_list_db.add(cursor.getString(0));
+
                 note_list_db.add(cursor.getString(1));
             }
+
             adapterPush();
         } catch (Exception e) {
             Toast.makeText(this, "" + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -119,17 +147,13 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
 
     public void adapterPush() {
 
-        for (int i = 0; i < note_list_db.size(); i++) {
-            note_list.add(note_list_db.get(i));
-        }
-        notesAdapter = new NotesAdapter(note_list, getApplicationContext(), this);
+        notesAdapter = new NotesAdapter(note_list_db, getApplicationContext(), this);
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
         recyclerView.setLayoutManager(mLayoutManager);
         recyclerView.setAdapter(notesAdapter);
     }
 
-
-    public void showAddNotePopup() {
+       public void showAddNotePopup() {
         dialog = new Dialog(NotesActivity.this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_add_layout);
@@ -171,8 +195,8 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
             public void onClick(View view) {
 
                 dialog.dismiss();
-                note_edt.setText(note_list_db.get(position));
-                //  updateNoteDB()
+
+                  updateNoteDB(note_id_list_db.get(position),note_edt.getText().toString());
             }
         });
         dialog.findViewById(R.id.update_note_delete_btn).setOnClickListener(new View.OnClickListener() {
@@ -184,18 +208,43 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
                 try {
                     DataBaseHelper dataBaseHelper = new DataBaseHelper(getApplicationContext());
                     SQLiteDatabase db = dataBaseHelper.getWritableDatabase();
-                  //  String[] stunlar = {DataBaseHelper.NOTES_COLUMN_ID, DataBaseHelper.NOTES_COLUMN_NOTES};
-                    Cursor row =  db.rawQuery("select *from " + DataBaseHelper.NOTES_TABLE_NAME, new String[]{DataBaseHelper.NOTES_COLUMN_ID});
-                  //  Cursor row = db.rawQuery("select *from " + DataBaseHelper.NOTES_TABLE_NAME , stunlar);
-                    String _id = row.getString(row.getColumnIndexOrThrow("_id"));
-                    deleteFromDB(Integer.parseInt(_id));
+                    deleteFromDB(note_id_list_db.get(position));
                 } catch (Exception e) {
                     Toast.makeText(getApplicationContext(), "" + e.getMessage(), Toast.LENGTH_LONG).show();
-
                 }
             }
         });
 
         dialog.show();
+
+    }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.search_menu, menu);
+
+        SearchManager searchManager = (SearchManager)
+                getSystemService(Context.SEARCH_SERVICE);
+
+        SearchView searchView = (SearchView) menu.findItem(R.id.search).getActionView();
+       // searchView = (SearchView) searchMenuItem.getActionView();
+
+        searchView.setSearchableInfo(searchManager.
+                getSearchableInfo(getComponentName()));
+        searchView.setSubmitButtonEnabled(true);
+        searchView.setOnQueryTextListener(this);
+
+        return true;
+    }
+
+    @Override
+    public boolean onQueryTextSubmit(String s) {
+        return false;
+    }
+
+    @Override
+    public boolean onQueryTextChange(String s) {
+
+        return true;
     }
 }
