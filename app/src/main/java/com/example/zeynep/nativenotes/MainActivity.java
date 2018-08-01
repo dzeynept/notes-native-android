@@ -75,7 +75,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     startActivity(new Intent(this, NotesActivity.class));
                     finish();
                 }else
-                    Toast.makeText(this, "Login credentials invalid!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Invalid username or password!", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.signup_btn :
@@ -131,19 +131,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Toast.makeText(this, "" + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
         db.close();
-     /*   DataBaseHelper dataBaseHelper1 = new DataBaseHelper(getApplicationContext());
-        SQLiteDatabase db1 = dataBaseHelper1.getWritableDatabase();
-        String[] table_list = {"_id"};
-        String selection = "_id" + " = ?";
-        String[] selectionArgs = {"zeynep", "123"};
-        Cursor cursor = db1.query(DataBaseHelper.USER_NAME, table_list, selection, selectionArgs, null, null, null);
-        cursor.moveToFirst();
-        while (!cursor.isAfterLast()) {
-
-            int id = cursor.getInt(0);
-            cursor.moveToNext();
-        }
-        db1.close();*/
      return columnId;
     }
 

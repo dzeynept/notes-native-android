@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -12,6 +14,7 @@ import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -34,38 +37,36 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
     List<String> userimg_list_db = new ArrayList<>();
     private String pictureFilePath;
     static final int REQUEST_PICTURE_CAPTURE = 1;
-
+    DataBaseHelper dataBaseHelper;
+    EditText edtName, edtPass;
+    UserModel user;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
-        readFromDB();
+        user = UserPreferences.getInstance(this).readUser();
+        dataBaseHelper = new DataBaseHelper(this);
+
         uname_txt = findViewById(R.id.uname_txt);
         uname_txt.setText("default");
         profile_img = findViewById(R.id.profile_img);
         profile_img.setOnClickListener(this);
+        edtName = findViewById(R.id.profile_uname);
+        edtPass = findViewById(R.id.profile_password);
+        findViewById(R.id.profile_save_btn).setOnClickListener(this);
 
-    }
-    public List<String> readFromDB() {
-        DataBaseHelper dataBaseHelper = new DataBaseHelper(ProfileActivity.this);
-        SQLiteDatabase db = dataBaseHelper.getReadableDatabase();
-        try {
-            String[] stunlar = {DataBaseHelper.USER_COLUMN_ID, DataBaseHelper.USER_NAME, DataBaseHelper.U_NAME,DataBaseHelper.USER_PASSWORD,DataBaseHelper.USER_IMG,DataBaseHelper.USER_NOTE_ID};
-            Cursor cursor = db.query(DataBaseHelper.USER_TABLE_NAME, stunlar, null, null, null, null, null);
-            while (cursor.moveToNext()) {
-                user_id_list_db.add(cursor.getString(0));
-                username_list_db.add(cursor.getString(1));
-                uname_list_db.add(cursor.getString(2));
-                userpassword_list_db.add(cursor.getString(3));
+        uname_txt.setText(user.getUserName());
+        if (user.getName() != null) edtName.setText(user.getName());
+        if (user.getImg() != null){
+            File imgFile = new  File(user.getImg());
 
+            if(imgFile.exists()){
+                Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
+
+                profile_img.setImageBitmap(myBitmap);
             }
-        } catch (Exception e) {
-            Toast.makeText(this, "" + e.getMessage(), Toast.LENGTH_LONG).show();
         }
-
-        db.close();
-        return username_list_db;
     }
 
     @Override
@@ -76,10 +77,15 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
                     takePicture();
                 }
                 break;
-                case R.id.profile_save_btn:
-                if(getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)){
-                    takePicture();
-                }
+            case R.id.profile_save_btn:
+
+                if (pictureFilePath != null)user.setImg(pictureFilePath);
+                if (edtName.getText() != null)user.setName(edtName.getText().toString());
+                if (edtPass.getText() != null)user.setPassword(edtPass.getText().toString());
+                dataBaseHelper.updateUser(user);
+                UserPreferences.getInstance(this).saveUser(user);
+                startActivity(new Intent(this, NotesActivity.class));
+                finish();
                 break;
         }
     }
@@ -129,26 +135,5 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
                 profile_img.setImageURI(Uri.fromFile(imgFile));
             }
         }
-    }
-
-    public int updateNoteDB(String userId, String noteId) {
-        DataBaseHelper dataBaseHelper = new DataBaseHelper(getApplicationContext());
-        SQLiteDatabase db = dataBaseHelper.getWritableDatabase();
-        int count = 0;
-        try {
-            ContentValues cv = new ContentValues();
-            cv.put(DataBaseHelper.USER_NOTE_ID, noteId);
-            count = db.update(DataBaseHelper.USER_TABLE_NAME, cv, DataBaseHelper.USER_COLUMN_ID+" = ?",new String[]{userId});
-
-
-        } catch (Exception e) {
-            Toast.makeText(this, "" + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
-        db.close();
-        readFromDB();
-        //showNotes(note_list_db);
-        return  count;
-
-
     }
 }
