@@ -33,6 +33,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        UserModel userModel = UserPreferences.getInstance(this).readUser();
+        if (userModel != null) {
+            startActivity(new Intent(this, NotesActivity.class));
+            finish();
+        }
         dataBaseHelper = new DataBaseHelper(MainActivity.this);
         login_btn = findViewById(R.id.login_btn);
         signup_btn = findViewById(R.id.signup_btn);
@@ -69,70 +74,49 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.login_btn :
 
                 UserModel userModel = checkLog(username_edt.getText().toString(), password_edt.getText().toString());
-
-                if (userModel != null){
+                if (userModel != null && !username_edt.getText().toString().equalsIgnoreCase("")
+                        &&!password_edt.getText().toString().equalsIgnoreCase("")){
                     UserPreferences.getInstance(this).saveUser(userModel);
                     startActivity(new Intent(this, NotesActivity.class));
                     finish();
-                }else
+                } else if (userModel != null &&username_edt.getText().toString().equalsIgnoreCase("") ) {
+                    Toast.makeText(this, "User name is empty!", Toast.LENGTH_SHORT).show();
+
+                }
+                else if (userModel != null && password_edt.getText().toString().equalsIgnoreCase("") ) {
+                    Toast.makeText(this, "Password is empty!", Toast.LENGTH_SHORT).show();
+
+                }else {
                     Toast.makeText(this, "Invalid username or password!", Toast.LENGTH_SHORT).show();
+
+                }
                 break;
 
             case R.id.signup_btn :
                 UserModel userModel2 = checkLog(username_edt.getText().toString(), password_edt.getText().toString());
 
-                if (userModel2 == null){
+                if (userModel2 == null && !username_edt.getText().toString().equalsIgnoreCase("")
+                        &&!password_edt.getText().toString().equalsIgnoreCase("") ){
                     userModel2 = new UserModel(username_edt.getText().toString(), password_edt.getText().toString());
 
                     UserPreferences.getInstance(this).saveUser(userModel2);
                     dataBaseHelper.addUser(userModel2);
                     startActivity(new Intent(this, NotesActivity.class));
                     finish();
-                }else{
-                    Toast.makeText(this, "User exists!", Toast.LENGTH_SHORT).show();
+                }else if (userModel2 == null && username_edt.getText().toString().equalsIgnoreCase("")){
+                    Toast.makeText(this, "User name is empty!", Toast.LENGTH_SHORT).show();
                 }
-//                if (username_list_db.size() > 0) {
-//                    for(int i = 0; i < username_list_db.size(); i++ ) {
-//                        if (username_list_db.get(i).equalsIgnoreCase(username_edt.getText().toString())) {
-//                            Toast.makeText(this, "" + "User is exist!", Toast.LENGTH_LONG).show();
-//                            break;
-//                        }else{
-//                            UserPreferences.getInstance(this).saveUser(
-//                                    new UserModel(saveToDB(username_edt.getText().toString(),username_edt.getText().toString(),password_edt.getText().toString(), "","")
-//                                            ,username_edt.getText().toString(), password_edt.getText().toString()));
-//                            startActivity(new Intent(MainActivity.this, NotesActivity.class));
-//                            finish();
-//                        }
-//                    }
-//                } else{
-//                    saveToDB(username_edt.getText().toString(),username_edt.getText().toString(),password_edt.getText().toString(), "","");
-//                    startActivity(new Intent(MainActivity.this, NotesActivity.class));
-//                    finish();
-//                }
-               break;
-        }
-    }
-    public long saveToDB(String username, String uname, String password, String userimg, String note_id) {
-        DataBaseHelper dataBaseHelper = new DataBaseHelper(getApplicationContext());
-        SQLiteDatabase db = dataBaseHelper.getWritableDatabase();
-        long columnId = -1;
-        try {
-            ContentValues cv = new ContentValues();
-            cv.put(DataBaseHelper.USER_NAME, username);
-            cv.put(DataBaseHelper.U_NAME, uname);
-            cv.put(DataBaseHelper.USER_PASSWORD, password);
-            cv.put(DataBaseHelper.USER_IMG, userimg);
-            cv.put(DataBaseHelper.USER_NOTE_ID, note_id);
-            columnId = db.insert(DataBaseHelper.USER_TABLE_NAME, null, cv);
-            /*startActivity(new Intent(MainActivity.this, NotesActivity.class));
-            finish();*/
+                else if (userModel2 == null && password_edt.getText().toString().equalsIgnoreCase("")){
+                    Toast.makeText(this, "Password is empty!", Toast.LENGTH_SHORT).show();
+                }
+                else
+                    Toast.makeText(this, "User exists!", Toast.LENGTH_SHORT).show();
 
-        } catch (Exception e) {
-            Toast.makeText(this, "" + e.getMessage(), Toast.LENGTH_SHORT).show();
+
+                break;
         }
-        db.close();
-     return columnId;
     }
+
 
     public List<String> readFromDB() {
         DataBaseHelper dataBaseHelper = new DataBaseHelper(MainActivity.this);
@@ -155,15 +139,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 uname_list_db.add(cursor.getString(2));
                 userpassword_list_db.add(cursor.getString(3));
             }
-           /* SharedPreferences sharedPref = this.getSharedPreferences("user", Context.MODE_PRIVATE);
-            SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putInt("user_id", user_id);
-            editor.apply();*/
+
         } catch (Exception e) {
             Toast.makeText(this, "" + e.getMessage(), Toast.LENGTH_LONG).show();
         }
 
         db.close();
         return username_list_db;
+    }
+    @Override
+    public void onBackPressed() {
     }
 }

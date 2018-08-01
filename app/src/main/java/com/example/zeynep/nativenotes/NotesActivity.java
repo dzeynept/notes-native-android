@@ -30,8 +30,8 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
     ImageView addNote;
     NotesAdapter notesAdapter;
     private Dialog dialog;
-    Button profile_btn;
     List<NotesModel> notes;
+    List<NotesModel> searchList;
     DataBaseHelper dataBaseHelper;
     UserModel user;
 
@@ -48,8 +48,6 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
         dataBaseHelper = new DataBaseHelper(getApplicationContext());
         user = UserPreferences.getInstance(this).readUser();
         recyclerView = findViewById(R.id.notes_recycler);
-        profile_btn = findViewById(R.id.profile_btn);
-        profile_btn.setOnClickListener(this);
         addNote = findViewById(R.id.fab);
         addNote.setOnClickListener(this);
         readFromDB();
@@ -62,9 +60,7 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
             case R.id.fab :
                 showAddNotePopup();
                 break;
-            case R.id.profile_btn :
-                startActivity(new Intent(NotesActivity.this, ProfileActivity.class));
-                break;
+
         }
     }
 
@@ -72,7 +68,7 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
 
         NotesModel notesModel = new NotesModel(note,String.valueOf(user.getID()));
         dataBaseHelper.addNote(notesModel);
-        startActivity(getIntent());
+        adapterPush();
 
     }
 
@@ -80,6 +76,7 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
 
         note.setNote(newNote);
         dataBaseHelper.updateNote(note);
+        adapterPush();
     }
 
 
@@ -135,7 +132,7 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
         // Creating email model to send
 
         final EditText note_edt = dialog.findViewById(R.id.update_dialog_note);
-        note_edt.setText(notes.get(position).getNote());
+                note_edt.setText(notes.get(position).getNote());
 
         dialog.findViewById(R.id.update_note_btn).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -153,7 +150,7 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
                 dialog.dismiss();
                 dataBaseHelper.deleteNote(notes.get(position));
                 notes.remove(position);
-                startActivity(getIntent());
+                adapterPush();
             }
         });
 
@@ -165,15 +162,8 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.search_menu, menu);
 
-        SearchManager searchManager = (SearchManager)
-                getSystemService(Context.SEARCH_SERVICE);
+        MenuItem search = menu.findItem(R.id.search);
 
-        SearchView searchView = (SearchView) menu.findItem(R.id.search).getActionView();
-
-        searchView.setSearchableInfo(searchManager.
-                getSearchableInfo(getComponentName()));
-        searchView.setSubmitButtonEnabled(true);
-        searchView.setOnQueryTextListener(this);
 
         menu.findItem(R.id.logout).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
@@ -184,6 +174,16 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
                 return false;
             }
         });
+        menu.findItem(R.id.profile_btn).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem menuItem) {
+                startActivity(new Intent(NotesActivity.this, ProfileActivity.class));
+                return false;
+            }
+        });
+
+        SearchView searchView = (SearchView) search.getActionView();
+        searchView.setOnQueryTextListener(this);
         return true;
     }
 
@@ -194,7 +194,28 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
 
     @Override
     public boolean onQueryTextChange(String s) {
+        if (notes.size() > 0) {
 
+            searchList= new ArrayList<>();
+            int i;
+            for( i = 0; i < notes.size(); i++) {
+                if (notes.get(i).getNote().toLowerCase().contains(s.toLowerCase())) {
+                    searchList.add(notes.get(i));
+                }
+
+            }
+            if (searchList.size() > 0) {
+                notesAdapter = new NotesAdapter(true,i-1,searchList, getApplicationContext(), this);
+                RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
+                recyclerView.setLayoutManager(mLayoutManager);
+                recyclerView.setAdapter(notesAdapter);
+            }
+
+        }
         return true;
+    }
+
+    @Override
+    public void onBackPressed() {
     }
 }

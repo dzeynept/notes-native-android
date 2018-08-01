@@ -13,6 +13,8 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -49,7 +51,6 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
         dataBaseHelper = new DataBaseHelper(this);
 
         uname_txt = findViewById(R.id.uname_txt);
-        uname_txt.setText("default");
         profile_img = findViewById(R.id.profile_img);
         profile_img.setOnClickListener(this);
         edtName = findViewById(R.id.profile_uname);
@@ -57,13 +58,13 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
         findViewById(R.id.profile_save_btn).setOnClickListener(this);
 
         uname_txt.setText(user.getUserName());
-        if (user.getName() != null) edtName.setText(user.getName());
+        if (user.getName() != null) edtName.setHint(user.getName());
+        if (user.getPassword() != null) edtPass.setHint(user.getPassword());
         if (user.getImg() != null){
             File imgFile = new  File(user.getImg());
 
             if(imgFile.exists()){
                 Bitmap myBitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath());
-
                 profile_img.setImageBitmap(myBitmap);
             }
         }
@@ -79,9 +80,16 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
                 break;
             case R.id.profile_save_btn:
 
-                if (pictureFilePath != null)user.setImg(pictureFilePath);
-                if (edtName.getText() != null)user.setName(edtName.getText().toString());
-                if (edtPass.getText() != null)user.setPassword(edtPass.getText().toString());
+                if (pictureFilePath != null) user.setImg(pictureFilePath);
+                if (edtName.getText().toString() != null && !edtName.getText().toString().isEmpty()){
+                    user.setName(edtName.getText().toString());
+                }
+                if (edtPass.getText().toString() != null && !edtPass.getText().toString().isEmpty()) {
+
+                    user.setPassword(edtPass.getText().toString());
+                }
+                user.setName(user.getUserName());
+                user.setPassword(user.getPassword());
                 dataBaseHelper.updateUser(user);
                 UserPreferences.getInstance(this).saveUser(user);
                 startActivity(new Intent(this, NotesActivity.class));
@@ -133,7 +141,9 @@ public class ProfileActivity extends AppCompatActivity implements View.OnClickLi
             File imgFile = new  File(pictureFilePath);
             if(imgFile.exists())            {
                 profile_img.setImageURI(Uri.fromFile(imgFile));
+
             }
         }
     }
+
 }

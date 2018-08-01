@@ -15,11 +15,20 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesHolder>
     Context context;
     NoteInterface noteInterface;
     List<NotesModel> notes_list;
+    int i;
+    boolean isFromSearch;
 
     NotesAdapter(List<NotesModel> notes_list, Context context, NoteInterface noteInterface) {
         this.context = context;
         this.notes_list = notes_list;
         this.noteInterface = noteInterface;
+    }
+    NotesAdapter(boolean isFromSearch, int i,List<NotesModel> notes_list, Context context, NoteInterface noteInterface) {
+        this.context = context;
+        this.notes_list = notes_list;
+        this.noteInterface = noteInterface;
+        this.i = i;
+        this.isFromSearch = isFromSearch;
     }
 
     @Override
@@ -36,7 +45,12 @@ public class NotesAdapter extends RecyclerView.Adapter<NotesAdapter.NotesHolder>
             @Override
             public void onClick(View v) {
 
-                noteInterface.showUpdateNotePopup(position);
+                if (isFromSearch) {
+                    noteInterface.showUpdateNotePopup(i);
+                } else {
+                    noteInterface.showUpdateNotePopup(position);
+
+                }
             }
         });
         // todo: create dialog nd btns

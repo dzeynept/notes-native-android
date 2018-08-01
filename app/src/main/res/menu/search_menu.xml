@@ -6,6 +6,11 @@
         android:icon="@drawable/ic_search_black_24dp"
         app:showAsAction="collapseActionView|ifRoom"
         app:actionViewClass="android.widget.SearchView" />
+    <item android:id="@+id/profile_btn"
+        android:title="Search"
+        android:icon="@drawable/ic_profile"
+        app:showAsAction="collapseActionView|ifRoom"
+        app:actionViewClass="android.widget.SearchView" />
     <item android:id="@+id/logout"
         android:title="Search"
         android:icon="@drawable/ic_close"
