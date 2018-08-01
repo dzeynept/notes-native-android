@@ -1,23 +1,35 @@
 package com.example.zeynep.nativenotes;
 
 import java.util.List;
+import java.util.UUID;
 
 public class UserModel {
 
-    private int ID;
+    private String ID;
     private String userName;
     private String name;
     private String password;
     private String img;
-    private List<String> noteIdList;
+    private String note_id;
 
-    public UserModel() {}
+    private int note_uniq_id;
+    private String note;
+    private String user_id_from_notes;
 
-    public int getID() {
+    public UserModel(String userName, String password) {
+        this.userName = userName;
+        this.password = password;
+        this.ID = UUID.randomUUID().toString();
+    }
+
+    public UserModel() {
+    }
+
+    public String getID() {
         return ID;
     }
 
-    public void setID(int ID) {
+    public void setID(String ID) {
         this.ID = ID;
     }
 
@@ -53,16 +65,40 @@ public class UserModel {
         this.img = img;
     }
 
-//    public List<String> getNoteIdList() {
-//        return noteIdList;
-//    }
-//
-//    public void setNoteIdList(List<String> noteIdList) {
-//        this.noteIdList = noteIdList;
-//    }
+    public String getNote_id() {
+        return note_id;
+    }
+
+    public void setNote_id(String note_id) {
+        this.note_id = note_id;
+    }
+
+    public int getNote_uniq_id() {
+        return note_uniq_id;
+    }
+
+    public void setNote_uniq_id(int note_uniq_id) {
+        this.note_uniq_id = note_uniq_id;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
+    }
+
+    public String getUser_id_from_notes() {
+        return user_id_from_notes;
+    }
+
+    public void setUser_id_from_notes(String user_id_from_notes) {
+        this.user_id_from_notes = user_id_from_notes;
+    }
 
     @Override
     public String toString() {
-        return "UserModel{" + "ID=" + ID + ", userName='" + userName + '\'' + ", name='" + name + '\'' + ", password='" + password + '\'' + ", img='" + img + '\'' + ", noteIdList=" + noteIdList + '}';
+        return "UserModel{" + "ID=" + ID + ", userName='" + userName + '\'' + ", name='" + name + '\'' + ", password='" + password + '\'' + ", img='" + img + '\''  + '}';
     }
 }

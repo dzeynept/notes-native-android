@@ -5,14 +5,12 @@ import android.app.SearchManager;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.View;
@@ -35,17 +33,29 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
     NotesAdapter notesAdapter;
     private Dialog dialog;
     Button profile_btn;
+    NotesModel notes;
+    DataBaseHelper dataBaseHelper;
+    UserModel user;
+
+    @Override
+    public boolean equals(Object obj) {
+        return super.equals(obj);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_notes);
+        dataBaseHelper = new DataBaseHelper(getApplicationContext());
+        user = UserPreferences.getInstance(this).readUser();
         recyclerView = findViewById(R.id.notes_recycler);
         profile_btn = findViewById(R.id.profile_btn);
         profile_btn.setOnClickListener(this);
         addNote = findViewById(R.id.fab);
         addNote.setOnClickListener(this);
         readFromDB();
+
     }
 
     @Override
@@ -62,30 +72,29 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
     }
 
     public void saveToDB(String note) {
-        DataBaseHelper dataBaseHelper = new DataBaseHelper(getApplicationContext());
-        SQLiteDatabase db = dataBaseHelper.getWritableDatabase();
-        try {
-            ContentValues cv = new ContentValues();
-            cv.put(DataBaseHelper.NOTES_COLUMN_NOTES, note);
-            db.insert(DataBaseHelper.NOTES_TABLE_NAME, null, cv);
 
+        NotesModel notesModel = new NotesModel(note,String.valueOf(user.getID()));
+        dataBaseHelper.addNote(notesModel);
+        startActivity(getIntent());
 
-          //  count = db.update(DataBaseHelper.USER_NOTE_ID, cvuser, DataBaseHelper.NOTES_COLUMN_ID+" = ?",new String[]{id});
-
-            readFromDB();
-            showNotes(note_list_db);
-        } catch (Exception e) {
-            Toast.makeText(this, "" + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
-        db.close();
+//        DataBaseHelper dataBaseHelper = new DataBaseHelper(getApplicationContext());
+//        SQLiteDatabase db = dataBaseHelper.getWritableDatabase();
+//        try {
+//            ContentValues cv = new ContentValues();
+//            cv.put(DataBaseHelper.NOTES_COLUMN_NOTES, note);
+//            cv.put(DataBaseHelper.NOTES_USER_ID_COLUMN_NOTES, "1qqq");
+//            db.insert(DataBaseHelper.NOTES_TABLE_NAME, null, cv);
+//
+//
+//          //  count = db.update(DataBaseHelper.USER_NOTE_ID, cvuser, DataBaseHelper.NOTES_COLUMN_ID+" = ?",new String[]{id});
+//
+//        } catch (Exception e) {
+//            Toast.makeText(this, "" + e.getMessage(), Toast.LENGTH_SHORT).show();
+//        }
+//        db.close();
+//
     }
-    private void showNotes(List<String> notes_list) {
-        if (notes_list.size() > 0) {
-            RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
-            recyclerView.setLayoutManager(mLayoutManager);
-            recyclerView.setAdapter(notesAdapter);
-        }
-    }
+
     public void deleteFromDB(String id) {
         DataBaseHelper dataBaseHelper = new DataBaseHelper(getApplicationContext());
         SQLiteDatabase db = dataBaseHelper.getWritableDatabase();
@@ -98,16 +107,16 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
             Toast.makeText(this, "" + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
             db.close();
-        readFromDB();
-        showNotes(note_list_db);
+        startActivity(getIntent());
     }
+
     public int updateNoteDB(String id, String note) {
         DataBaseHelper dataBaseHelper = new DataBaseHelper(getApplicationContext());
         SQLiteDatabase db = dataBaseHelper.getWritableDatabase();
         int count = 0;
         try {
             ContentValues cv = new ContentValues();
-           cv.put(DataBaseHelper.NOTES_COLUMN_NOTES, note);
+            cv.put(DataBaseHelper.NOTES_COLUMN_NOTES, note);
             count = db.update(DataBaseHelper.NOTES_TABLE_NAME, cv, DataBaseHelper.NOTES_COLUMN_ID+" = ?",new String[]{id});
 
 
@@ -115,11 +124,8 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
             Toast.makeText(this, "" + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
         db.close();
-        readFromDB();
-        showNotes(note_list_db);
+        startActivity(getIntent());
         return  count;
-
-
     }
 
 
@@ -127,13 +133,12 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
         DataBaseHelper dataBaseHelper = new DataBaseHelper(NotesActivity.this);
         SQLiteDatabase db = dataBaseHelper.getReadableDatabase();
         try {
-            String[] note_cloumn = {DataBaseHelper.NOTES_COLUMN_ID, DataBaseHelper.NOTES_COLUMN_NOTES};
+            /*String[] note_cloumn = {DataBaseHelper.NOTES_COLUMN_ID, DataBaseHelper.NOTES_COLUMN_NOTES};
             Cursor cursor = db.query(DataBaseHelper.NOTES_TABLE_NAME, note_cloumn, null, null, null, null, null);
             while (cursor.moveToNext()) {
                 note_id_list_db.add(cursor.getString(0));
-
                 note_list_db.add(cursor.getString(1));
-            }
+            }*/
 
             adapterPush();
         } catch (Exception e) {
@@ -146,8 +151,12 @@ public class NotesActivity extends AppCompatActivity implements View.OnClickList
 
 
     public void adapterPush() {
-
-        notesAdapter = new NotesAdapter(note_list_db, getApplicationContext(), this);
+      /*  for (int i = 0; i < note_list_db.size(); i++) {
+            note_list.add(note_list_db.get(i));
+        }*/
+        DataBaseHelper dataBaseHelper = new DataBaseHelper(this);
+        UserModel userModel = UserPreferences.getInstance(this).readUser();
+        notesAdapter = new NotesAdapter(dataBaseHelper.getAllNotes(userModel.getID()), getApplicationContext(), this);
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
         recyclerView.setLayoutManager(mLayoutManager);
         recyclerView.setAdapter(notesAdapter);

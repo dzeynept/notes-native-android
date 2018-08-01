@@ -9,6 +9,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -25,12 +26,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     List<String> uname_list_db = new ArrayList<>();
     List<String> userpassword_list_db = new ArrayList<>();
     List<String> user_id_list_db = new ArrayList<>();
-
+    List<UserModel> userModels = new ArrayList<>();
+    DataBaseHelper dataBaseHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        dataBaseHelper = new DataBaseHelper(MainActivity.this);
         login_btn = findViewById(R.id.login_btn);
         signup_btn = findViewById(R.id.signup_btn);
         username_edt = findViewById(R.id.main_username_edt);
@@ -38,6 +41,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         login_btn.setOnClickListener(this);
         signup_btn.setOnClickListener(this);
         readFromDB();
+        readUsersFromDB();
+
+    }
+
+    private void readUsersFromDB() {
+
+        userModels = dataBaseHelper.getAllUsers();
+    }
+
+    private UserModel checkLog(String username, String password){
+        if (userModels != null){
+            for (UserModel u : userModels) {
+                if (u.getUserName().equalsIgnoreCase(username) &&
+                        u.getPassword().equalsIgnoreCase(password)){
+                    return u;
+                }
+            }
+        }
+        return null;
     }
 
     @Override
@@ -45,42 +67,55 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (view.getId())
         {
             case R.id.login_btn :
-                if (username_list_db.size() > 0) {
-                    for(int i = 0; i < username_list_db.size(); i++ ) {
-                        if (username_list_db.get(i).equalsIgnoreCase(username_edt.getText().toString()) &&
-                                userpassword_list_db.get(i).equalsIgnoreCase(password_edt.getText().toString()) ) {
-                            startActivity(new Intent(MainActivity.this, NotesActivity.class));
-                            finish();
-                        }else{
-                            Toast.makeText(this, "" + "Invalid username or password!", Toast.LENGTH_LONG).show();
-                            break;
-                        }
-                    }
-                }
-                break;
-            case R.id.signup_btn :
-                if (username_list_db.size() > 0) {
-                    for(int i = 0; i < username_list_db.size(); i++ ) {
-                        if (username_list_db.get(i).equalsIgnoreCase(username_edt.getText().toString())) {
-                            Toast.makeText(this, "" + "User is exist!", Toast.LENGTH_LONG).show();
-                            break;
-                        }else{
-                            saveToDB(username_edt.getText().toString(),username_edt.getText().toString(),password_edt.getText().toString(), "","");
-                            startActivity(new Intent(MainActivity.this, NotesActivity.class));
-                            finish();
-                        }
-                    }
-                } else{
-                    saveToDB(username_edt.getText().toString(),username_edt.getText().toString(),password_edt.getText().toString(), "","");
-                    startActivity(new Intent(MainActivity.this, NotesActivity.class));
+
+                UserModel userModel = checkLog(username_edt.getText().toString(), password_edt.getText().toString());
+
+                if (userModel != null){
+                    UserPreferences.getInstance(this).saveUser(userModel);
+                    startActivity(new Intent(this, NotesActivity.class));
                     finish();
+                }else
+                    Toast.makeText(this, "Login credentials invalid!", Toast.LENGTH_SHORT).show();
+                break;
+
+            case R.id.signup_btn :
+                UserModel userModel2 = checkLog(username_edt.getText().toString(), password_edt.getText().toString());
+
+                if (userModel2 == null){
+                    userModel2 = new UserModel(username_edt.getText().toString(), password_edt.getText().toString());
+
+                    UserPreferences.getInstance(this).saveUser(userModel2);
+                    dataBaseHelper.addUser(userModel2);
+                    startActivity(new Intent(this, NotesActivity.class));
+                    finish();
+                }else{
+                    Toast.makeText(this, "User exists!", Toast.LENGTH_SHORT).show();
                 }
+//                if (username_list_db.size() > 0) {
+//                    for(int i = 0; i < username_list_db.size(); i++ ) {
+//                        if (username_list_db.get(i).equalsIgnoreCase(username_edt.getText().toString())) {
+//                            Toast.makeText(this, "" + "User is exist!", Toast.LENGTH_LONG).show();
+//                            break;
+//                        }else{
+//                            UserPreferences.getInstance(this).saveUser(
+//                                    new UserModel(saveToDB(username_edt.getText().toString(),username_edt.getText().toString(),password_edt.getText().toString(), "","")
+//                                            ,username_edt.getText().toString(), password_edt.getText().toString()));
+//                            startActivity(new Intent(MainActivity.this, NotesActivity.class));
+//                            finish();
+//                        }
+//                    }
+//                } else{
+//                    saveToDB(username_edt.getText().toString(),username_edt.getText().toString(),password_edt.getText().toString(), "","");
+//                    startActivity(new Intent(MainActivity.this, NotesActivity.class));
+//                    finish();
+//                }
                break;
         }
     }
-    public void saveToDB(String username, String uname, String password, String userimg, String note_id) {
+    public long saveToDB(String username, String uname, String password, String userimg, String note_id) {
         DataBaseHelper dataBaseHelper = new DataBaseHelper(getApplicationContext());
         SQLiteDatabase db = dataBaseHelper.getWritableDatabase();
+        long columnId = -1;
         try {
             ContentValues cv = new ContentValues();
             cv.put(DataBaseHelper.USER_NAME, username);
@@ -88,7 +123,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             cv.put(DataBaseHelper.USER_PASSWORD, password);
             cv.put(DataBaseHelper.USER_IMG, userimg);
             cv.put(DataBaseHelper.USER_NOTE_ID, note_id);
-            db.insert(DataBaseHelper.USER_TABLE_NAME, null, cv);
+            columnId = db.insert(DataBaseHelper.USER_TABLE_NAME, null, cv);
             /*startActivity(new Intent(MainActivity.this, NotesActivity.class));
             finish();*/
 
@@ -109,6 +144,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             cursor.moveToNext();
         }
         db1.close();*/
+     return columnId;
     }
 
     public List<String> readFromDB() {
